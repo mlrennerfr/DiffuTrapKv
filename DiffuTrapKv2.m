@@ -1,5 +1,5 @@
-function DiffuTrapKv2(tours)
-%function DiffuTrapKv2(tours)
+function DiffuTrapKv2
+%function DiffuTrapKv2
 % it creates un space with 1 circular domain where molecules can undergo
 % immobilizations due to interactions
 % each molecule may have 0 to 4 interaction sites (Cter)
@@ -8,9 +8,6 @@ function DiffuTrapKv2(tours)
 %
 % Marianne Renner 04/22
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if nargin<1
-    tours=1;
-end
 
 current_dir=cd;
 
@@ -382,16 +379,19 @@ end
 %--------------------------------------------------------------------------
 % prepare and save data trajectories
 
+% sort file to pool the points of each trajectory
+aux=sortrows(newtrcdata,1);
+newtrcdata=aux;
+clear aux
 
 % save data
 if isfolder('trc'); else ; mkdir('trc'); end
 currentdir=cd;
 
 cd('trc')
-d=dir('*-all.con.trc*');
+d=dir('*-all.trc*');
 st = {d.name};
 nroorder=size(st,2)+1;
-savename = 'sim-' ;
 
 % noise
 for t=1:size(newtrcdata,1)
@@ -401,17 +401,16 @@ for t=1:size(newtrcdata,1)
     newtrcdata(t,4)=newtrcdata(t,4)+noisey ;
 end
 
-
-
 % sort by group
-for gg=0:max(newtrcdata(:,8))
-    index=find(newtrcdata(:,8)==gg);
-    if isempty(index)==0
-        aux=newtrcdata(index,:);
-        save(['cter',num2str(gg),'-',num2str(nroorder),'.raw.trc'],'aux','-ascii'); % only syn loc
-    end
-    clear aux
-end
+%for gg=0:max(newtrcdata(:,8))
+%    index=find(newtrcdata(:,8)==gg);
+%    if isempty(index)==0
+%        aux=newtrcdata(index,:);
+%        save(['cter',num2str(gg),'-',num2str(nroorder),'.con.trc'],'aux','-ascii'); % only syn loc
+%    end
+%    clear aux
+%end
+
 % save all
 %save([savename,'.raw.trc'],'newtrcdata','-ascii'); % in nm, for plotting
 
@@ -421,33 +420,26 @@ for t=1:size(newtrcdata,1)
     newtrcdata(t,4)=newtrcdata(t,4)/szpx ;
 end
 
-%no localization
-noloctrc=newtrcdata;
-noloctrc(:,6)=zeros(size(noloctrc,1),1);
-
-% sort by group
-for gg=0:max(newtrcdata(:,8))
-    index=find(newtrcdata(:,8)==gg);
+% sort by group, reduce columns
+loctrc=[newtrcdata(:,1:4) newtrcdata(:,8)]; % col 5 : groups
+for gg=0:max(loctrc(:,5))
+    index=find(loctrc(:,5)==gg);
     if isempty(index)==0
-        aux=newtrcdata(index,:);
-        auxnoloc=noloctrc(index,:);
+        aux=loctrc(index,:);
         counter=1;
-        for nn=1:max(aux(:,1))
+        for nn=1:max(aux(:,1)) % renumber
             indexmol=find(aux(:,1)==nn);
             if isempty(indexmol)==0
                 aux(indexmol,1)=counter;
-                auxnoloc(indexmol,1)=counter;
                 counter=counter+1;
             end
         end
-       % save(['cter',num2str(gg),'-',num2str(nroorder),'.loc.trc'],'aux','-ascii'); %  with loc
-        save(['cter',num2str(gg),'-',num2str(nroorder),'.con.trc'],'auxnoloc','-ascii'); %  without loc
+       save(['cter',num2str(gg),'-',num2str(nroorder),'.trc'],'aux','-ascii'); %  with loc
     end
 end
 
 % save trc with all groups
-%save([savename,'-all.loc.trc'],'newtrcdata','-ascii'); % with loc
-%save([savename,'-all.con.trc'],'noloctrc','-ascii'); % without loc
+save(['sim-',num2str(nroorder),'-all.trc'],'loctrc','-ascii'); % with loc
 
 cd(currentdir)
 
@@ -455,7 +447,7 @@ cd(currentdir)
 %-------------------------------------------------------------------------
 %report simulation
 
-name=['report',savename,'.txt'];
+name=['report-',num2str(nroorder),'.txt'];
 fi = fopen(name,'wt');
 if fi<3
     error('File not found or readerror.');
